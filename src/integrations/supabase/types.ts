@@ -47,36 +47,51 @@ export type Database = {
         Row: {
           address: string
           background_image_url: string
+          category: string
+          city: string | null
+          country: string | null
           created_by: string
           creator: string
           date: string
           description: string
           id: string
           target_date: string
+          ticket_price: number | null
+          ticket_url: string | null
           time: string
           title: string
         }
         Insert: {
           address: string
           background_image_url: string
+          category?: string
+          city?: string | null
+          country?: string | null
           created_by?: string
           creator: string
           date: string
           description: string
           id?: string
           target_date: string
+          ticket_price?: number | null
+          ticket_url?: string | null
           time: string
           title: string
         }
         Update: {
           address?: string
           background_image_url?: string
+          category?: string
+          city?: string | null
+          country?: string | null
           created_by?: string
           creator?: string
           date?: string
           description?: string
           id?: string
           target_date?: string
+          ticket_price?: number | null
+          ticket_url?: string | null
           time?: string
           title?: string
         }
