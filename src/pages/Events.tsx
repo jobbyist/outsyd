@@ -30,6 +30,19 @@ const Events = () => {
   }, [enrichedEvents, selectedCountry]);
   const categories = useMemo(() => getUniqueValues(enrichedEvents, 'category'), [enrichedEvents]);
 
+  // Reset province when country changes
+  useEffect(() => {
+    if (selectedCountry === 'all') {
+      setSelectedProvince('all');
+    } else {
+      // Reset province if the selected province is not in the new country's provinces
+      const validProvinces = provinces;
+      if (selectedProvince !== 'all' && !validProvinces.includes(selectedProvince)) {
+        setSelectedProvince('all');
+      }
+    }
+  }, [selectedCountry, provinces, selectedProvince]);
+
   // Filter events based on selections
   const filteredEvents = useMemo(() => {
     return enrichedEvents.filter((event) => {
@@ -197,7 +210,7 @@ const Events = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {sortedEvents.map((event, index) => (
-                <EventCard key={index} event={event} />
+                <EventCard key={`${event.name}-${event.date}-${event.venue}-${index}`} event={event} />
               ))}
             </div>
           )}

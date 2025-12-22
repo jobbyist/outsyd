@@ -32,6 +32,15 @@ const CITY_TO_PROVINCE: { [key: string]: string } = {
   'Magaliesburg': 'North West',
 };
 
+// Valid month abbreviations for parsing
+const MONTH_MAP: { [key: string]: number } = {
+  'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+  'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11,
+  'January': 0, 'February': 1, 'March': 2, 'April': 3,
+  'June': 5, 'July': 6, 'August': 7, 'September': 8,
+  'October': 9, 'November': 10, 'December': 11
+};
+
 /**
  * Enriches event data with country and province information
  */
@@ -81,10 +90,27 @@ export const parseEventDate = (dateStr: string): Date | null => {
     // Remove day name and parse
     const parts = dateStr.split(' ');
     if (parts.length >= 4) {
-      const day = parts[1];
-      const month = parts[2];
-      const year = parts[3];
-      return new Date(`${month} ${day}, ${year}`);
+      const day = parseInt(parts[1]);
+      const monthStr = parts[2];
+      const year = parseInt(parts[3]);
+      
+      // Validate month
+      const month = MONTH_MAP[monthStr];
+      if (month === undefined) {
+        console.error('Invalid month name:', monthStr);
+        return null;
+      }
+      
+      // Create date object
+      const date = new Date(year, month, day);
+      
+      // Validate the created date
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date:', dateStr);
+        return null;
+      }
+      
+      return date;
     }
     return null;
   } catch (error) {

@@ -17,9 +17,12 @@ export const EventSchema: React.FC<EventSchemaProps> = ({ events }) => {
     if (event.time && event.time !== 'TBC' && event.time.includes(':')) {
       try {
         const [hours, minutes] = event.time.split(':');
-        const dateObj = new Date(event.date);
-        dateObj.setHours(parseInt(hours) || 0, parseInt(minutes) || 0);
-        startDate = dateObj.toISOString();
+        // Use parseEventDate utility for consistent date parsing
+        const parsedDate = parseEventDate(event.date);
+        if (parsedDate) {
+          parsedDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0);
+          startDate = parsedDate.toISOString();
+        }
       } catch (e) {
         // Use date as-is if time parsing fails
         console.error('Error parsing date/time:', event.date, event.time, e);
