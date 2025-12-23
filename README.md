@@ -199,7 +199,49 @@ This project uses Google Maps Places API for location autocomplete. To enable th
 
 ## How can I deploy this project?
 
+### Option 1: Deploy via Lovable
+
 Simply open [Lovable](https://lovable.dev/projects/f1ba0c74-af75-4389-a8ae-60baf80911b5) and click on Share -> Publish.
+
+### Option 2: Deploy to GitHub Pages (Recommended)
+
+This project is configured to automatically deploy to GitHub Pages with the custom domain `outsyd.gravitas.uno`.
+
+**Automatic Deployment:**
+- The GitHub Actions workflow automatically builds and deploys the site when you push to the `main` branch
+- The workflow is located at `.github/workflows/deploy.yml`
+
+**Setup Instructions:**
+
+1. **Enable GitHub Pages:**
+   - Go to your repository Settings → Pages
+   - Under "Build and deployment", set Source to "GitHub Actions"
+
+2. **Configure DNS for Custom Domain:**
+   - Add a CNAME record in your DNS settings:
+     ```
+     Type: CNAME
+     Name: outsyd.gravitas.uno (or subdomain)
+     Value: jobbyist.github.io
+     ```
+   - Alternatively, use A records pointing to GitHub's IP addresses:
+     ```
+     185.199.108.153
+     185.199.109.153
+     185.199.110.153
+     185.199.111.153
+     ```
+
+3. **Wait for DNS Propagation:**
+   - DNS changes can take up to 24 hours to propagate
+   - GitHub will automatically provision an SSL certificate for your custom domain
+
+4. **Verify Deployment:**
+   - Check the Actions tab in your repository to see the workflow status
+   - Once complete, visit https://outsyd.gravitas.uno
+
+**Manual Deployment:**
+To deploy manually, you can also trigger the workflow from the Actions tab using the "Run workflow" button.
 
 ## Can I connect a custom domain to my Lovable project?
 
