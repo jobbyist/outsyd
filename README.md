@@ -37,6 +37,87 @@ A modern, full-stack event management platform built with React, TypeScript, and
 - **Semantic HTML**: Structured markup for better search engine visibility
 - **Open Graph Tags**: Social media preview optimization
 - **Responsive Design**: Mobile-first design that works on all devices
+- **Event Schema**: JSON-LD structured data for Google Events rich results
+
+## Event Listings Feature
+
+The `/events` page provides a comprehensive listing of events loaded from a JSON data file.
+
+### Features
+- **Data-Driven**: Loads 116+ events from `data/extract-data-2025-12-22.json`
+- **Smart Filters**: Filter events by country, province/region, and category
+- **Client-Side Filtering**: Fast, responsive filtering without page reloads
+- **SEO Optimized**: Each event includes Google Events Schema (JSON-LD) for rich search results
+- **Responsive Design**: Works seamlessly on mobile, tablet, and desktop
+
+### Data File Structure
+
+The event data is stored in `/data/extract-data-2025-12-22.json` with the following structure:
+
+```json
+{
+  "events": [
+    {
+      "city": "Cape Town",
+      "category": "Concert",
+      "name": "Event Name",
+      "date": "Sat 24 Jan 2025",
+      "time": "18:00",
+      "venue": "Venue Name",
+      "description": "Event description",
+      "city_citation": "https://source-url.com"
+    }
+  ]
+}
+```
+
+### Updating Event Data
+
+To update the event listings:
+
+1. **Prepare New Data File**: Create or update the JSON file following the structure above
+2. **Place in Data Directory**: Save the file in `/data/` directory
+3. **Update Import**: If using a different filename, update the import in `/src/pages/Events.tsx`:
+   ```typescript
+   import eventData from '@/../data/your-new-file.json';
+   ```
+4. **Build and Deploy**: Run `npm run build` and deploy the updated application
+
+### How the Code Works
+
+The event listing feature consists of several components:
+
+#### 1. Type Definitions (`src/types/eventListing.ts`)
+Defines TypeScript interfaces for event data structure.
+
+#### 2. Utility Functions (`src/lib/eventListingUtils.ts`)
+- **enrichEventData()**: Adds country and province information based on city names
+- **getUniqueValues()**: Extracts unique values for filter dropdowns
+- **parseEventDate()**: Parses date strings into Date objects for sorting
+
+#### 3. Event Schema Component (`src/components/EventSchema.tsx`)
+Generates JSON-LD structured data for Google Events Schema, enabling:
+- Rich snippets in search results
+- Event details in Google Search
+- Better SEO and discoverability
+
+#### 4. Events Page (`src/pages/Events.tsx`)
+Main page component that:
+- Loads and enriches event data
+- Provides filter UI (country, province, category)
+- Renders event cards with all details
+- Injects SEO metadata and structured data
+
+#### 5. Routing (`src/App.tsx`)
+The `/events` route is registered in the main App component.
+
+### Maintenance Tips
+
+- **Adding Events**: Simply update the JSON file with new events following the same structure
+- **Filtering Logic**: All filters work client-side using React state and useMemo hooks
+- **City-to-Province Mapping**: Update `CITY_TO_PROVINCE` in `eventListingUtils.ts` if adding new cities
+- **SEO**: Event schemas are automatically generated from the data - no manual updates needed
+- **Performance**: The page uses React memoization to ensure filters remain fast even with hundreds of events
 
 ## Project info
 
