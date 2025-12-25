@@ -1,6 +1,7 @@
 import React from 'react';
 import { EventListing } from '@/types/eventListing';
 import { Helmet } from 'react-helmet-async';
+import { parseEventDate } from '@/lib/eventListingUtils';
 
 interface EventSchemaProps {
   events: EventListing[];

@@ -50,7 +50,7 @@ export type Database = {
           category: string
           city: string | null
           country: string | null
-          created_by: string
+          created_by: string | null
           creator: string
           date: string
           description: string
@@ -67,7 +67,7 @@ export type Database = {
           category?: string
           city?: string | null
           country?: string | null
-          created_by?: string
+          created_by?: string | null
           creator: string
           date: string
           description: string
@@ -84,7 +84,7 @@ export type Database = {
           category?: string
           city?: string | null
           country?: string | null
-          created_by?: string
+          created_by?: string | null
           creator?: string
           date?: string
           description?: string
