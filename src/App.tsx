@@ -10,6 +10,9 @@ import MyEvents from "./pages/MyEvents";
 import CreateEvent from "./pages/CreateEvent";
 import EditEvent from "./pages/EditEvent";
 import Events from "./pages/Events";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -25,6 +28,9 @@ const App = () => (
       <Route path="/events" element={<Events />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/contact" element={<Contact />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
