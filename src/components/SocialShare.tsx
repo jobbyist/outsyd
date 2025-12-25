@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 
 interface SocialShareProps {
   title: string;
@@ -17,14 +18,15 @@ export const SocialShare: React.FC<SocialShareProps> = ({ title, description, ur
     twitter: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`,
     whatsapp: `https://wa.me/?text=${fullText}`,
-    // Instagram doesn't have a direct share URL, so we'll copy to clipboard
   };
 
   const handleShare = (platform: keyof typeof shareLinks | 'instagram') => {
     if (platform === 'instagram') {
-      // Copy to clipboard for Instagram
       navigator.clipboard.writeText(`${title}\n\n${description}\n\n${url}`);
-      alert('Link copied! Open Instagram and paste in your story.');
+      toast.success('Link copied!', {
+        description: 'Open Instagram and paste in your story.',
+        position: 'top-center',
+      });
       return;
     }
     window.open(shareLinks[platform], '_blank', 'width=600,height=400');

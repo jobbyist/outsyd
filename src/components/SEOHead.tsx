@@ -12,11 +12,11 @@ export const SEOHead = ({
   title, 
   description, 
   keywords = 'events, discover events, event management, community events, African events, OUTSYD',
-  image = '/placeholder.svg',
+  image = 'https://outsyd.africa/placeholder.svg',
   url = window.location.href
 }: SEOHeadProps) => {
   const fullTitle = `${title} | OUTSYD`;
-  
+  const canonicalUrl = url.replace(/^https?:\/\/[^/]+/, 'https://outsyd.africa');
   return (
     <Helmet>
       {/* Primary Meta Tags */}
@@ -25,7 +25,7 @@ export const SEOHead = ({
       <meta name="description" content={description} />
       {keywords && <meta name="keywords" content={keywords} />}
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="canonical" href={url} />
+      <link rel="canonical" href={canonicalUrl} />
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content="website" />

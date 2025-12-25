@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import arrowDown from '@/assets/arrow-down.png';
@@ -15,7 +16,10 @@ import { RotatingBadge } from '@/components/RotatingBadge';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { LocationFilter } from '@/components/LocationFilter';
 import { EventSearch } from '@/components/EventSearch';
+import { AdPlaceholder } from '@/components/AdPlaceholder';
 import { EVENT_CATEGORIES, EventCategory } from '@/constants/eventCategories';
+
+const EVENTS_PER_PAGE = 12;
 
 interface Event {
   id: string;
@@ -105,6 +109,8 @@ const Discover = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     fetchEvents();
     detectUserCountry();
@@ -228,6 +234,18 @@ const Discover = () => {
       return target >= now - oneHour;
     })
     .slice(0, 6);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * EVENTS_PER_PAGE;
+    return filteredEvents.slice(startIndex, startIndex + EVENTS_PER_PAGE);
+  }, [filteredEvents, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedCountry, selectedCity, date, searchQuery]);
 
   const scrollToEvents = () => {
     const eventsSection = document.getElementById('events-section');
@@ -367,18 +385,28 @@ const Discover = () => {
             </div>
           )}
 
+          {/* Sponsored Ad Placeholder */}
+          <div className="my-8">
+            <AdPlaceholder size="leaderboard" />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 lg:gap-12 mt-8 md:mt-16">
             {/* Calendar - Desktop only */}
-            <div className="hidden lg:block animate-fade-in lg:sticky lg:top-24 self-start" style={{ animationDelay: '0.9s', animationFillMode: 'both' }}>
+            <div className="hidden lg:block animate-fade-in lg:sticky lg:top-24 self-start space-y-6" style={{ animationDelay: '0.9s', animationFillMode: 'both' }}>
               <Calendar mode="single" selected={date} onSelect={setDate} className="mx-auto" />
+              {/* Sidebar Ad */}
+              <AdPlaceholder size="square" className="mx-auto" />
             </div>
 
             {/* Event Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:col-start-2 gap-5">
+            <div className="lg:col-start-2">
               {loading ? (
-                <div className="col-span-full text-center py-12">Loading events...</div>
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                  <span className="ml-3 text-muted-foreground">Loading events...</span>
+                </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="col-span-full text-center py-12">
+                <div className="text-center py-12">
                   {hasActiveFilters ? (
                     <div>
                       <p className="mb-4">No events found matching your filters</p>
@@ -394,20 +422,88 @@ const Discover = () => {
                   )}
                 </div>
               ) : (
-                filteredEvents.map((event, index) => (
-                  <div 
-                    key={event.id} 
-                    className="animate-fade-in" 
-                    style={{ animationDelay: `${1.0 + (index * 0.1)}s`, animationFillMode: 'both' }}
-                  >
-                    <EventCard event={event} />
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {paginatedEvents.map((event, index) => (
+                      <div 
+                        key={event.id} 
+                        className="animate-fade-in" 
+                        style={{ animationDelay: `${0.1 + (index * 0.05)}s`, animationFillMode: 'both' }}
+                      >
+                        <EventCard event={event} />
+                      </div>
+                    ))}
                   </div>
-                ))
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-12">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="icon"
+                              onClick={() => {
+                                setCurrentPage(pageNum);
+                                scrollToEvents();
+                              }}
+                              className={currentPage === pageNum ? "gradient-brand text-foreground" : ""}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                      
+                      <span className="text-sm text-muted-foreground ml-4">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
+
+          {/* Bottom Ad Placeholder */}
+          <div className="mt-12">
+            <AdPlaceholder size="banner" />
+          </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };
