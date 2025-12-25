@@ -75,14 +75,14 @@ const EventCard = ({
           </div>
         )}
         {eventLive && (
-          <div className="bg-[#FA76FF] border border-t-0 border-foreground px-3 h-[23px] flex items-center">
+          <div className="gradient-brand border border-t-0 border-foreground px-3 h-[23px] flex items-center">
             <div className="text-[11px] font-medium uppercase leading-none">LIVE NOW</div>
           </div>
         )}
       </div>
       {event.ticket_url && (
         <div className="absolute top-4 right-4">
-          <div className="bg-[#FA76FF] border border-foreground px-2 h-[23px] flex items-center">
+          <div className="gradient-brand border border-foreground px-2 h-[23px] flex items-center">
             <div className="text-[11px] font-medium uppercase leading-none">
               {event.ticket_price ? `$${event.ticket_price}` : 'Tickets'}
             </div>
@@ -249,9 +249,9 @@ const Discover = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="Discover Events | Outsyde"
+        title="Discover Events"
         description="Explore popular events across Africa. Find music festivals, tech conferences, sports events, and more in South Africa, Nigeria, Ghana, Kenya, and beyond."
-        keywords="events, discover events, African events, music festivals, tech conferences, sports events, nightlife, Outsyde"
+        keywords="events, discover events, African events, music festivals, tech conferences, sports events, nightlife, OUTSYD"
       />
       <div className="animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
         <Navbar />
@@ -270,7 +270,7 @@ const Discover = () => {
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium mb-6 md:mb-10 inline-flex flex-col items-center" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
             <div className="flex items-center">
               <span className="border border-foreground px-3 md:px-6 py-2 md:py-4 animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>Discover</span>
-              <span className="bg-[#ff6bff] border border-foreground px-3 md:px-6 py-2 md:py-4 rounded-[20px] md:rounded-[40px] -ml-px animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>events</span>
+              <span className="gradient-brand border border-foreground px-3 md:px-6 py-2 md:py-4 rounded-[20px] md:rounded-[40px] -ml-px animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>events</span>
             </div>
             <div className="flex items-center -mt-px">
               <span className="border border-foreground px-3 md:px-6 py-2 md:py-4 animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>across</span>
