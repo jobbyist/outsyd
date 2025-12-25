@@ -180,10 +180,14 @@ export const EventDetailPage: React.FC = () => {
             <EventLocation address={event.address} onGetDirections={handleGetDirections} />
 
             {/* Ticket Button */}
-            {event.ticket_url && (
+            {(event.ticket_url || event.ticket_price) && (
               <TicketButton 
                 ticketUrl={event.ticket_url} 
                 ticketPrice={event.ticket_price}
+                eventId={event.id}
+                eventTitle={event.title}
+                eventDate={event.date}
+                eventImage={event.background_image_url}
                 className="w-full"
               />
             )}
