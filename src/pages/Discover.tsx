@@ -14,6 +14,7 @@ import { EventsCarousel } from '@/components/EventsCarousel';
 import { RotatingBadge } from '@/components/RotatingBadge';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { LocationFilter } from '@/components/LocationFilter';
+import { EventSearch } from '@/components/EventSearch';
 import { EVENT_CATEGORIES, EventCategory } from '@/constants/eventCategories';
 
 interface Event {
@@ -29,6 +30,7 @@ interface Event {
   city: string | null;
   ticket_url: string | null;
   ticket_price: number | null;
+  description?: string;
 }
 
 const EventCard = ({
@@ -102,7 +104,7 @@ const Discover = () => {
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-
+  const [searchQuery, setSearchQuery] = useState('');
   useEffect(() => {
     fetchEvents();
     detectUserCountry();
@@ -162,7 +164,7 @@ const Discover = () => {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('id, title, date, time, background_image_url, target_date, address, category, country, city, ticket_url, ticket_price')
+        .select('id, title, date, time, background_image_url, target_date, address, category, country, city, ticket_url, ticket_price, description')
         .order('target_date', { ascending: true });
 
       if (error) throw error;
@@ -181,6 +183,15 @@ const Discover = () => {
     const hasEnded = target < now - oneHour;
     
     if (hasEnded) return false;
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesTitle = event.title.toLowerCase().includes(query);
+      const matchesDescription = event.description?.toLowerCase().includes(query);
+      const matchesAddress = event.address.toLowerCase().includes(query);
+      if (!matchesTitle && !matchesDescription && !matchesAddress) return false;
+    }
     
     // Category filter
     if (selectedCategory && event.category !== selectedCategory) return false;
@@ -208,6 +219,16 @@ const Discover = () => {
     return true;
   });
 
+  // Featured events - show first 6 upcoming events regardless of filters
+  const featuredEvents = events
+    .filter((event) => {
+      const now = new Date().getTime();
+      const target = new Date(event.target_date).getTime();
+      const oneHour = 1000 * 60 * 60;
+      return target >= now - oneHour;
+    })
+    .slice(0, 6);
+
   const scrollToEvents = () => {
     const eventsSection = document.getElementById('events-section');
     eventsSection?.scrollIntoView({
@@ -220,9 +241,10 @@ const Discover = () => {
     setSelectedCountry(null);
     setSelectedCity(null);
     setDate(undefined);
+    setSearchQuery('');
   };
 
-  const hasActiveFilters = selectedCategory || selectedCountry || selectedCity || date;
+  const hasActiveFilters = selectedCategory || selectedCountry || selectedCity || date || searchQuery;
 
   return (
     <div className="min-h-screen bg-background">
@@ -266,6 +288,11 @@ const Discover = () => {
       {/* Events Section */}
       <section id="events-section" className="px-4 md:px-8 pb-16 pt-6 md:pt-16">
         <div>
+          {/* Search Bar */}
+          <div className="mb-6 animate-fade-in" style={{ animationDelay: '0.75s', animationFillMode: 'both' }}>
+            <EventSearch value={searchQuery} onChange={setSearchQuery} />
+          </div>
+
           {/* Filters Header */}
           <div className="mb-6 md:mb-8 animate-fade-in space-y-4" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
             <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -321,6 +348,24 @@ const Discover = () => {
               )}
             </div>
           </div>
+
+          {/* Featured Events Section - Show when no filters active */}
+          {!hasActiveFilters && featuredEvents.length > 0 && (
+            <div className="mb-12 animate-fade-in" style={{ animationDelay: '0.85s', animationFillMode: 'both' }}>
+              <h3 className="text-xl md:text-2xl font-medium mb-6">Featured Events</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {featuredEvents.map((event, index) => (
+                  <div 
+                    key={event.id} 
+                    className="animate-fade-in" 
+                    style={{ animationDelay: `${0.9 + (index * 0.1)}s`, animationFillMode: 'both' }}
+                  >
+                    <EventCard event={event} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 lg:gap-12 mt-8 md:mt-16">
             {/* Calendar - Desktop only */}

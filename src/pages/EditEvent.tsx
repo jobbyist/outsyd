@@ -13,6 +13,8 @@ import { AuthSheet } from '@/components/AuthSheet';
 import { SEOHead } from '@/components/SEOHead';
 import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
+import { EVENT_CATEGORIES, EventCategory } from '@/constants/eventCategories';
+import { AFRICAN_COUNTRIES, getCitiesByCountry } from '@/constants/africanLocations';
 
 const eventSchema = z.object({
   eventName: z.string().trim().min(1, 'Event name is required').max(200, 'Event name must be less than 200 characters'),
@@ -39,6 +41,12 @@ const EditEvent = () => {
   const [loading, setLoading] = useState(true);
   const [registrants, setRegistrants] = useState<Array<{ display_name: string; registered_at: string }>>([]);
   
+  // New fields
+  const [category, setCategory] = useState<EventCategory>('other');
+  const [country, setCountry] = useState<string>('');
+  const [city, setCity] = useState<string>('');
+  const [ticketUrl, setTicketUrl] = useState<string>('');
+  const [ticketPrice, setTicketPrice] = useState<string>('');
   
   const locationInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +123,13 @@ const EditEvent = () => {
       setDescription(data.description);
       setLocation(data.address);
       setImagePreview(data.background_image_url);
+      
+      // Populate new fields
+      setCategory((data.category as EventCategory) || 'other');
+      setCountry(data.country || '');
+      setCity(data.city || '');
+      setTicketUrl(data.ticket_url || '');
+      setTicketPrice(data.ticket_price ? String(data.ticket_price) : '');
 
       // Parse date and time
       const targetDate = new Date(data.target_date);
@@ -288,6 +303,11 @@ const EditEvent = () => {
           background_image_url: imageUrl,
           target_date: targetDate.toISOString(),
           creator: creatorName,
+          category: category,
+          country: country || null,
+          city: city || null,
+          ticket_url: ticketUrl || null,
+          ticket_price: ticketPrice ? parseFloat(ticketPrice) : null,
         })
         .eq('id', id);
 
@@ -482,6 +502,83 @@ const EditEvent = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+
+            {/* Category */}
+            <div className="space-y-2">
+              <label className="text-[14px] md:text-[17px] font-medium">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as EventCategory)}
+                className="w-full px-3 md:px-4 py-2 md:py-3 text-[14px] md:text-[17px] text-black border border-black focus:outline-none bg-white"
+              >
+                {EVENT_CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.emoji} {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Country */}
+            <div className="space-y-2">
+              <label className="text-[14px] md:text-[17px] font-medium">Country</label>
+              <select
+                value={country}
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  setCity('');
+                }}
+                className="w-full px-3 md:px-4 py-2 md:py-3 text-[14px] md:text-[17px] text-black border border-black focus:outline-none bg-white"
+              >
+                <option value="">Select a country</option>
+                {AFRICAN_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* City */}
+            {country && (
+              <div className="space-y-2">
+                <label className="text-[14px] md:text-[17px] font-medium">City</label>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full px-3 md:px-4 py-2 md:py-3 text-[14px] md:text-[17px] text-black border border-black focus:outline-none bg-white"
+                >
+                  <option value="">Select a city</option>
+                  {getCitiesByCountry(country).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Ticket URL */}
+            <div className="space-y-2">
+              <label className="text-[14px] md:text-[17px] font-medium">Ticket URL (optional)</label>
+              <input
+                type="url"
+                placeholder="https://tickets.example.com/event"
+                className="w-full px-3 md:px-4 py-2 md:py-3 text-[14px] md:text-[17px] text-black border border-black focus:outline-none placeholder:text-[#C4C4C4]"
+                value={ticketUrl}
+                onChange={(e) => setTicketUrl(e.target.value)}
+              />
+            </div>
+
+            {/* Ticket Price */}
+            <div className="space-y-2">
+              <label className="text-[14px] md:text-[17px] font-medium">Ticket Price (optional)</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                className="w-full px-3 md:px-4 py-2 md:py-3 text-[14px] md:text-[17px] text-black border border-black focus:outline-none placeholder:text-[#C4C4C4]"
+                value={ticketPrice}
+                onChange={(e) => setTicketPrice(e.target.value)}
+              />
+            </div>
 
             {/* Registrants List */}
             {registrants.length > 0 && (
