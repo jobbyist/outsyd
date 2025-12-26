@@ -22,6 +22,7 @@ export const ChatBot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -36,8 +37,33 @@ export const ChatBot = () => {
     }
   }, [isOpen]);
 
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
+
+    // Check message length
+    if (input.trim().length > 1000) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "Your message is too long. Please keep it under 1000 characters."
+      }]);
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -54,7 +80,18 @@ export const ChatBot = () => {
         body: { message: userMessage.content }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle authentication error
+        if (error.message?.includes('401') || error.message?.includes('Authentication')) {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "Please sign in to use the chat feature. You can create an account or log in to get personalized assistance!"
+          }]);
+          return;
+        }
+        throw error;
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -167,26 +204,43 @@ export const ChatBot = () => {
 
           {/* Input */}
           <div className="p-4 border-t border-foreground">
-            <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me anything..."
-                className="flex-1 bg-muted px-3 py-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
-                disabled={isLoading}
-              />
-              <Button
-                size="icon"
-                onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
-                className="gradient-brand"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+            {isAuthenticated === false ? (
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">Sign in to chat with our AI assistant</p>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsOpen(false);
+                  }}
+                  className="gradient-brand text-sm"
+                >
+                  Sign In
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me anything..."
+                  maxLength={1000}
+                  className="flex-1 bg-muted px-3 py-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
+                  disabled={isLoading}
+                />
+                <Button
+                  size="icon"
+                  onClick={sendMessage}
+                  disabled={!input.trim() || isLoading}
+                  className="gradient-brand"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
