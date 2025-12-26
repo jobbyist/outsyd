@@ -11,7 +11,7 @@ interface SEOHeadProps {
 export const SEOHead = ({ 
   title, 
   description, 
-  keywords = 'events, discover events, event management, community events, African events, OUTSYD',
+  keywords = 'events Africa, events South Africa, events Nigeria, events Kenya, events Ghana, concerts, festivals, nightlife, African events, event tickets, Johannesburg events, Lagos events, Nairobi events, Accra events, Cape Town events, OUTSYD',
   image = 'https://outsyd.africa/placeholder.svg',
   url = window.location.href
 }: SEOHeadProps) => {

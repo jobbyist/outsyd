@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { SEOHead } from '@/components/SEOHead';
+import { AdPlaceholder } from '@/components/AdPlaceholder';
 import { Button } from '@/components/ui/button';
 import { Check, Crown, Gift, Percent, Sparkles, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,9 +49,9 @@ const Premium = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="Premium Membership"
-        description="Join OUTSYD Premium for $4.99/month. Get cashback on tickets, exclusive giveaways, early access to sales, and members-only perks across Africa's best events."
-        keywords="OUTSYD Premium, event membership, cashback tickets, exclusive giveaways, VIP events Africa"
+        title="Premium Membership - Exclusive Benefits & Rewards"
+        description="Join OUTSYD Premium for $4.99/month. Get cashback on tickets, exclusive giveaways, early access to sales, VIP upgrades, and members-only perks across Africa's best events in South Africa, Nigeria, Kenya, Ghana and beyond."
+        keywords="OUTSYD Premium, event membership, cashback tickets, exclusive giveaways, VIP events Africa, event rewards, premium membership, early ticket access, event perks South Africa, event benefits Nigeria"
       />
       <Navbar />
       
@@ -147,6 +148,13 @@ const Premium = () => {
                 Priority access, upgrades, and members-only event experiences
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* Sponsored Ad */}
+        <section className="px-4 md:px-8 pb-8">
+          <div className="max-w-5xl mx-auto">
+            <AdPlaceholder size="leaderboard" />
           </div>
         </section>
 

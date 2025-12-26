@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
 import { EventSchema } from '@/components/EventSchema';
+import { AdPlaceholder } from '@/components/AdPlaceholder';
 import { EventListing, EventListingData } from '@/types/eventListing';
 import { enrichEventData, getUniqueValues, parseEventDate } from '@/lib/eventListingUtils';
 import eventData from '@/../data/extract-data-2025-12-22.json';
@@ -74,9 +75,9 @@ const Events = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="Event Listings"
-        description="Browse upcoming events across South Africa. Filter by location, category and find events near you."
-        keywords="events, South Africa events, concerts, festivals, entertainment, event listings"
+        title="Event Listings - Find Events Near You"
+        description="Browse comprehensive event listings across South Africa, Nigeria, Kenya, and Ghana. Filter by location and category to discover concerts, festivals, conferences, sports events, and entertainment near you. Updated daily with the latest African events."
+        keywords="event listings, events South Africa, concerts Nigeria, festivals Kenya, entertainment Ghana, events near me, African event calendar, Johannesburg events, Lagos entertainment, Nairobi concerts, Accra festivals, event directory Africa, upcoming events"
       />
       
       {/* Inject JSON-LD schema for SEO */}
@@ -195,6 +196,13 @@ const Events = () => {
         </div>
       </section>
 
+      {/* Sponsored Ad */}
+      <section className="px-4 md:px-8 pb-8">
+        <div className="max-w-7xl mx-auto">
+          <AdPlaceholder size="leaderboard" />
+        </div>
+      </section>
+
       {/* Events List Section */}
       <section className="px-4 md:px-8 pb-16">
         <div className="max-w-7xl mx-auto">
@@ -214,6 +222,13 @@ const Events = () => {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Bottom Sponsored Ad */}
+      <section className="px-4 md:px-8 pb-16">
+        <div className="max-w-7xl mx-auto">
+          <AdPlaceholder size="banner" />
         </div>
       </section>
     </div>

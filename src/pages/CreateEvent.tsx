@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { User } from '@supabase/supabase-js';
 import { AuthSheet } from '@/components/AuthSheet';
 import { SEOHead } from '@/components/SEOHead';
+import { AdPlaceholder } from '@/components/AdPlaceholder';
 import { z } from 'zod';
 import { EVENT_CATEGORIES, EventCategory } from '@/constants/eventCategories';
 import { AFRICAN_COUNTRIES, getCitiesByCountry } from '@/constants/africanLocations';
@@ -211,8 +212,9 @@ const CreateEvent = () => {
   return (
     <>
       <SEOHead 
-        title="Create Event | Outsyde"
-        description="Create and publish a new event for your community to discover and join on Outsyde"
+        title="Create Event - List Your Event on OUTSYD"
+        description="Create and publish events on Africa's premier event discovery platform. Reach thousands of potential attendees across South Africa, Nigeria, Kenya, Ghana and beyond. List concerts, festivals, conferences, and more."
+        keywords="create event, list event Africa, publish event, event organizer, promote events, South Africa events, Nigeria events, Kenya events, Ghana events, event management Africa"
       />
       <AuthSheet isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       
@@ -494,6 +496,11 @@ const CreateEvent = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            
+            {/* Sponsored Ad */}
+            <div className="mt-12 max-w-4xl mx-auto">
+              <AdPlaceholder size="leaderboard" />
             </div>
           </div>
         ) : null}
