@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,6 +19,16 @@ interface ScrapedEvent {
   image_url: string | null;
 }
 
+// Allowed domains for scraping - whitelist approach
+const ALLOWED_DOMAINS = [
+  'quicket.co.za',
+  'webtickets.co.za',
+  'arifriky.com',
+  'nairaland.com',
+  'momondo.com',
+  'kenyabuzz.com',
+];
+
 // African event websites to scrape
 const EVENT_SOURCES = [
   { url: 'https://www.quicket.co.za/events/', country: 'South Africa', category: 'general' },
@@ -27,16 +39,75 @@ const EVENT_SOURCES = [
   { url: 'https://www.kenyabuzz.com/events/', country: 'Kenya', category: 'general' },
 ];
 
+// Validate URL against allowed domains
+function isAllowedUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    return ALLOWED_DOMAINS.some(domain => parsedUrl.hostname.includes(domain));
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase credentials not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Authentication check - require valid JWT
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.log('No authorization header provided');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.log('Invalid token:', authError?.message);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Authorization check - require admin role
+    const { data: roles, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin');
+
+    if (roleError || !roles || roles.length === 0) {
+      console.log('User is not admin:', user.id);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Admin authenticated:', user.id);
+
+    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
     if (!firecrawlApiKey) {
       console.error('FIRECRAWL_API_KEY not configured');
@@ -54,8 +125,35 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Parse and validate input
     const { url, country } = await req.json().catch(() => ({}));
     
+    // If specific URL provided, validate it against allowed domains
+    if (url) {
+      if (typeof url !== 'string' || url.length > 500) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid URL format' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!isAllowedUrl(url)) {
+        console.log('URL not in allowed domains:', url);
+        return new Response(
+          JSON.stringify({ success: false, error: 'URL domain not allowed. Only approved event websites can be scraped.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Validate country if provided
+    if (country && (typeof country !== 'string' || country.length > 100)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid country format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // If specific URL provided, scrape that. Otherwise scrape all sources
     const sourcesToScrape = url 
       ? [{ url, country: country || 'Unknown', category: 'general' }]
@@ -188,11 +286,8 @@ Deno.serve(async (req) => {
 
     console.log(`Total events extracted: ${allEvents.length}`);
 
-    // If we have events and Supabase is configured, save them
-    if (allEvents.length > 0 && supabaseUrl && supabaseServiceKey) {
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+    // Save events to database
+    if (allEvents.length > 0) {
       for (const event of allEvents) {
         try {
           // Parse date to create target_date
@@ -231,7 +326,7 @@ Deno.serve(async (req) => {
               ticket_price: event.ticket_price,
               background_image_url: event.image_url || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800',
               target_date: parsedDate.toISOString(),
-              creator: 'Outsyde Bot',
+              creator: 'OUTSYD Bot',
             });
 
           if (insertError) {
@@ -257,7 +352,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Scrape events error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ success: false, error: 'An unexpected error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
