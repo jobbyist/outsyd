@@ -22,9 +22,13 @@ import { ChatBot } from "./components/ChatBot";
 import { Preloader } from "./components/Preloader";
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    // Check if preloader has already been shown this session
+    return !sessionStorage.getItem('preloader_shown');
+  });
 
   const handlePreloaderComplete = useCallback(() => {
+    sessionStorage.setItem('preloader_shown', 'true');
     setIsLoading(false);
   }, []);
 
