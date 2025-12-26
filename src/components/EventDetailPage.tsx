@@ -12,6 +12,7 @@ import { AuthSheet } from './AuthSheet';
 import { SEOHead } from './SEOHead';
 import { SocialShare } from './SocialShare';
 import { TicketButton } from './TicketButton';
+import { AdPlaceholder } from './AdPlaceholder';
 import { EVENT_CATEGORIES } from '@/constants/eventCategories';
 
 interface Event {
@@ -135,11 +136,51 @@ export const EventDetailPage: React.FC = () => {
   return (
     <>
       <SEOHead 
-        title={`${event.title} | Outsyde`}
-        description={event.description.substring(0, 160)}
+        title={`${event.title} - ${event.city || event.country || 'Africa'} | OUTSYD`}
+        description={`${event.description.substring(0, 140)} Join us at ${event.address}. Get tickets and event details on OUTSYD.`}
         image={event.background_image_url}
-        keywords={`event, ${event.title}, ${event.address}, ${categoryInfo?.label || ''}, African events, Outsyde`}
+        keywords={`${event.title}, ${event.address}, ${event.city || ''}, ${event.country || 'Africa'}, ${categoryInfo?.label || 'event'}, African events, event tickets, ${event.date}, OUTSYD`}
       />
+      
+      {/* Structured Data for Event */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Event",
+          "name": event.title,
+          "description": event.description,
+          "startDate": event.target_date,
+          "endDate": event.target_date,
+          "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+          "eventStatus": "https://schema.org/EventScheduled",
+          "location": {
+            "@type": "Place",
+            "name": event.address,
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": event.address,
+              "addressLocality": event.city || "",
+              ...(event.country && { "addressCountry": event.country })
+            }
+          },
+          "image": event.background_image_url,
+          "organizer": {
+            "@type": "Organization",
+            "name": event.creator || "OUTSYD",
+            "url": "https://outsyd.africa"
+          },
+          ...(event.ticket_url && {
+            "offers": {
+              "@type": "Offer",
+              "url": event.ticket_url,
+              "price": event.ticket_price || "0",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            }
+          })
+        })}
+      </script>
+      
       <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <Navbar />
 
@@ -176,6 +217,11 @@ export const EventDetailPage: React.FC = () => {
             </div>
             
             <EventDescription description={event.description} />
+            
+            {/* Sponsored Ad */}
+            <div className="w-full">
+              <AdPlaceholder size="banner" />
+            </div>
             
             <EventLocation address={event.address} onGetDirections={handleGetDirections} />
 

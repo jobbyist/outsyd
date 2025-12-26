@@ -276,9 +276,9 @@ const Discover = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="Discover Events"
-        description="Explore popular events across Africa. Find music festivals, tech conferences, sports events, and more in South Africa, Nigeria, Ghana, Kenya, and beyond."
-        keywords="events, discover events, African events, music festivals, tech conferences, sports events, nightlife, OUTSYD"
+        title="Discover Events Across Africa"
+        description="Explore the best events across Africa. Find music festivals, concerts, tech conferences, sports events, nightlife, and cultural celebrations in South Africa, Nigeria, Kenya, Ghana, and more. Book tickets and never miss out on Africa's top events."
+        keywords="discover events Africa, events South Africa, concerts Nigeria, festivals Kenya, nightlife Ghana, African music festivals, tech conferences Africa, sports events, cultural events, event tickets Africa, Johannesburg events, Lagos concerts, Nairobi festivals, Accra nightlife, Cape Town events, OUTSYD"
       />
       <div className="animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
         <Navbar />
@@ -309,6 +309,11 @@ const Discover = () => {
           </p>
         </div>
       </section>
+
+      {/* Ad Placeholder after Hero */}
+      <div className="px-4 md:px-8 mb-8">
+        <AdPlaceholder size="leaderboard" />
+      </div>
 
       <EventsCarousel />
 
