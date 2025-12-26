@@ -13,7 +13,11 @@ import Events from "./pages/Events";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
+import Premium from "./pages/Premium";
+import Business from "./pages/Business";
+import Affiliate from "./pages/Affiliate";
 import NotFound from "./pages/NotFound";
+import { ChatBot } from "./components/ChatBot";
 
 const App = () => (
   <TooltipProvider>
@@ -31,9 +35,13 @@ const App = () => (
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/premium" element={<Premium />} />
+      <Route path="/business" element={<Business />} />
+      <Route path="/affiliate" element={<Affiliate />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <ChatBot />
   </TooltipProvider>
 );
 

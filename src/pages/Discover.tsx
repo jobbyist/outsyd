@@ -17,6 +17,9 @@ import { CategoryFilter } from '@/components/CategoryFilter';
 import { LocationFilter } from '@/components/LocationFilter';
 import { EventSearch } from '@/components/EventSearch';
 import { AdPlaceholder } from '@/components/AdPlaceholder';
+import { PremiumSection } from '@/components/PremiumSection';
+import { CurrencyLanguageSelector } from '@/components/CurrencyLanguageSelector';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { EVENT_CATEGORIES, EventCategory } from '@/constants/eventCategories';
 
 const EVENTS_PER_PAGE = 12;
