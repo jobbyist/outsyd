@@ -141,6 +141,46 @@ export const EventDetailPage: React.FC = () => {
         image={event.background_image_url}
         keywords={`${event.title}, ${event.address}, ${event.city || ''}, ${event.country || 'Africa'}, ${categoryInfo?.label || 'event'}, African events, event tickets, ${event.date}, OUTSYD`}
       />
+      
+      {/* Structured Data for Event */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Event",
+          "name": event.title,
+          "description": event.description,
+          "startDate": event.target_date,
+          "endDate": event.target_date,
+          "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+          "eventStatus": "https://schema.org/EventScheduled",
+          "location": {
+            "@type": "Place",
+            "name": event.address,
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": event.address,
+              "addressLocality": event.city || "",
+              "addressCountry": event.country || "Africa"
+            }
+          },
+          "image": event.background_image_url,
+          "organizer": {
+            "@type": "Organization",
+            "name": event.creator || "OUTSYD",
+            "url": "https://outsyd.africa"
+          },
+          ...(event.ticket_url && {
+            "offers": {
+              "@type": "Offer",
+              "url": event.ticket_url,
+              "price": event.ticket_price || "0",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            }
+          })
+        })}
+      </script>
+      
       <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <Navbar />
 
