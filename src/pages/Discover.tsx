@@ -44,24 +44,24 @@ const EventCard = ({
 }) => {
   const navigate = useNavigate();
   
-  const isEventLive = () => {
-    const now = new Date().getTime();
-    const target = new Date(event.target_date).getTime();
-    const oneHour = 1000 * 60 * 60;
-    return now >= target && now <= target + oneHour;
-  };
-  
-  const eventLive = isEventLive();
+  const now = new Date().getTime();
+  const target = new Date(event.target_date).getTime();
+  const oneHour = 1000 * 60 * 60;
+  const isLive = now >= target && now <= target + oneHour;
+  const isPast = target < now - oneHour;
   const categoryInfo = EVENT_CATEGORIES.find(c => c.value === event.category);
   
   return (
     <div 
-      className="relative cursor-pointer group"
+      className={cn("relative cursor-pointer group", isPast && "opacity-70")}
       onClick={() => navigate(`/event/${event.id}`)}
     >
       <div className="overflow-hidden mb-3">
         <div 
-          className="aspect-square bg-muted bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
+          className={cn(
+            "aspect-square bg-muted bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110",
+            isPast && "grayscale-[30%]"
+          )}
           style={{ backgroundImage: `url(${event.background_image_url})` }}
         ></div>
       </div>
@@ -78,13 +78,18 @@ const EventCard = ({
             <div className="text-[11px] font-medium uppercase leading-none">{categoryInfo.label}</div>
           </div>
         )}
-        {eventLive && (
+        {isLive && (
           <div className="gradient-brand border border-t-0 border-foreground px-3 h-[23px] flex items-center">
             <div className="text-[11px] font-medium uppercase leading-none">LIVE NOW</div>
           </div>
         )}
+        {isPast && (
+          <div className="bg-muted border border-t-0 border-foreground px-3 h-[23px] flex items-center">
+            <div className="text-[11px] font-medium uppercase leading-none text-muted-foreground">PAST EVENT</div>
+          </div>
+        )}
       </div>
-      {event.ticket_url && (
+      {event.ticket_url && !isPast && (
         <div className="absolute top-4 right-4">
           <div className="gradient-brand border border-foreground px-2 h-[23px] flex items-center">
             <div className="text-[11px] font-medium uppercase leading-none">
@@ -183,13 +188,6 @@ const Discover = () => {
   };
 
   const filteredEvents = events.filter((event) => {
-    const now = new Date().getTime();
-    const target = new Date(event.target_date).getTime();
-    const oneHour = 1000 * 60 * 60;
-    const hasEnded = target < now - oneHour;
-    
-    if (hasEnded) return false;
-    
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -225,15 +223,23 @@ const Discover = () => {
     return true;
   });
 
-  // Featured events - show first 6 upcoming events regardless of filters
-  const featuredEvents = events
-    .filter((event) => {
-      const now = new Date().getTime();
-      const target = new Date(event.target_date).getTime();
-      const oneHour = 1000 * 60 * 60;
-      return target >= now - oneHour;
-    })
-    .slice(0, 6);
+  // Featured events - show first 6 events sorted by date (prioritize upcoming)
+  const featuredEvents = useMemo(() => {
+    const now = new Date().getTime();
+    return [...events]
+      .sort((a, b) => {
+        const aDate = new Date(a.target_date).getTime();
+        const bDate = new Date(b.target_date).getTime();
+        const aIsFuture = aDate >= now;
+        const bIsFuture = bDate >= now;
+        // Prioritize future events
+        if (aIsFuture && !bIsFuture) return -1;
+        if (!aIsFuture && bIsFuture) return 1;
+        // For same category (both future or both past), sort by date
+        return aDate - bDate;
+      })
+      .slice(0, 6);
+  }, [events]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
