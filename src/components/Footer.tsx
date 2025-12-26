@@ -83,7 +83,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Products & Legal */}
+          {/* Products */}
           <div>
             <h4 className="text-sm font-medium uppercase tracking-wider mb-4">Products</h4>
             <ul className="space-y-3">
@@ -102,6 +102,11 @@ export const Footer: React.FC = () => {
                   Affiliate Program
                 </Link>
               </li>
+            </ul>
+
+            {/* Legal */}
+            <h4 className="text-sm font-medium uppercase tracking-wider mb-4 mt-6">Legal</h4>
+            <ul className="space-y-3">
               <li>
                 <Link to="/terms" className="text-background/70 hover:text-background transition-colors text-sm">
                   Terms of Service
