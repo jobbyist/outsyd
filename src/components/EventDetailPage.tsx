@@ -160,7 +160,7 @@ export const EventDetailPage: React.FC = () => {
               "@type": "PostalAddress",
               "streetAddress": event.address,
               "addressLocality": event.city || "",
-              "addressCountry": event.country || "Africa"
+              ...(event.country && { "addressCountry": event.country })
             }
           },
           "image": event.background_image_url,
