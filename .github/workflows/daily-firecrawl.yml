@@ -1,0 +1,25 @@
+name: Daily Firecrawl Event Refresh
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape-events:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Firecrawl scrape
+        env:
+          SUPABASE_FUNCTION_URL: ${{ secrets.SUPABASE_FUNCTION_URL }}
+          SCRAPE_CRON_SECRET: ${{ secrets.SCRAPE_CRON_SECRET }}
+        run: |
+          if [ -z "$SUPABASE_FUNCTION_URL" ] || [ -z "$SCRAPE_CRON_SECRET" ]; then
+            echo "Missing SUPABASE_FUNCTION_URL or SCRAPE_CRON_SECRET secrets." >&2
+            exit 1
+          fi
+
+          curl -sSf -X POST "$SUPABASE_FUNCTION_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Cron-Secret: $SCRAPE_CRON_SECRET" \
+            -d '{}'

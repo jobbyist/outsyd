@@ -17,37 +17,134 @@ interface ScrapedEvent {
   ticket_url: string | null;
   ticket_price: number | null;
   image_url: string | null;
+  source_url: string;
+  source_domain: string;
 }
 
-// Allowed domains for scraping - whitelist approach
-const ALLOWED_DOMAINS = [
-  'quicket.co.za',
-  'webtickets.co.za',
-  'arifriky.com',
-  'nairaland.com',
-  'momondo.com',
-  'kenyabuzz.com',
+interface EventSource {
+  name: string;
+  url: string;
+  country: string;
+  category: string;
+  domain?: string;
+}
+
+const DEFAULT_EVENT_SOURCES: EventSource[] = [
+  {
+    name: 'Quicket',
+    url: 'https://www.quicket.co.za/events/',
+    country: 'South Africa',
+    category: 'general',
+  },
+  {
+    name: 'Webtickets',
+    url: 'https://www.webtickets.co.za/v2/Events.aspx',
+    country: 'South Africa',
+    category: 'general',
+  },
+  {
+    name: 'TicketPro',
+    url: 'https://www.ticketpro.co.za/portal/web/index.php/event',
+    country: 'South Africa',
+    category: 'general',
+  },
+  {
+    name: 'Kenyabuzz',
+    url: 'https://www.kenyabuzz.com/events',
+    country: 'Kenya',
+    category: 'general',
+  },
+  {
+    name: 'Eventbrite Nigeria',
+    url: 'https://www.eventbrite.com/d/nigeria--lagos/events/',
+    country: 'Nigeria',
+    category: 'general',
+  },
+  {
+    name: 'Eventbrite Ghana',
+    url: 'https://www.eventbrite.com/d/ghana--accra/events/',
+    country: 'Ghana',
+    category: 'general',
+  },
 ];
 
-// African event websites to scrape
-const EVENT_SOURCES = [
-  { url: 'https://www.quicket.co.za/events/', country: 'South Africa', category: 'general' },
-  { url: 'https://www.webtickets.co.za/v2/Events.aspx', country: 'South Africa', category: 'general' },
-  { url: 'https://arifriky.com/events/', country: 'Nigeria', category: 'general' },
-  { url: 'https://www.nairaland.com/events', country: 'Nigeria', category: 'general' },
-  { url: 'https://ghana.momondo.com/events', country: 'Ghana', category: 'general' },
-  { url: 'https://www.kenyabuzz.com/events/', country: 'Kenya', category: 'general' },
-];
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800';
+const ALLOWED_CATEGORIES = new Set([
+  'music',
+  'sports',
+  'tech',
+  'arts',
+  'food',
+  'business',
+  'community',
+  'wellness',
+  'education',
+  'other',
+]);
 
-// Validate URL against allowed domains
-function isAllowedUrl(urlString: string): boolean {
+const normalizeDomain = (urlString: string): string => {
   try {
     const parsedUrl = new URL(urlString);
-    return ALLOWED_DOMAINS.some(domain => parsedUrl.hostname.includes(domain));
+    return parsedUrl.hostname.replace(/^www\./, '').toLowerCase();
   } catch {
-    return false;
+    return '';
   }
-}
+};
+
+const normalizeText = (value?: string | null): string => {
+  if (!value) return '';
+  return value.trim();
+};
+
+const parseFutureDate = (dateString: string): Date | null => {
+  const parsedDate = new Date(dateString);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (parsedDate < startOfToday) return null;
+  return parsedDate;
+};
+
+const isAllowedTicketUrl = (urlString: string, allowedDomains: Set<string>): boolean => {
+  const domain = normalizeDomain(urlString);
+  return domain.length > 0 && allowedDomains.has(domain);
+};
+
+const getEventSources = async (supabase: ReturnType<typeof createClient>): Promise<EventSource[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('event_sources')
+      .select('name, url, country, category, domain, enabled')
+      .eq('enabled', true);
+
+    if (error || !data || data.length === 0) {
+      return DEFAULT_EVENT_SOURCES;
+    }
+
+    return data.map((source) => ({
+      name: source.name,
+      url: source.url,
+      country: source.country,
+      category: source.category || 'general',
+      domain: source.domain || undefined,
+    }));
+  } catch (error) {
+    console.error('Failed to load event sources, falling back to defaults:', error);
+    return DEFAULT_EVENT_SOURCES;
+  }
+};
+
+const isValidScrapedEvent = (event: ScrapedEvent): boolean => {
+  const title = normalizeText(event.title);
+  const venue = normalizeText(event.venue);
+  const city = normalizeText(event.city);
+  const description = normalizeText(event.description);
+
+  if (title.length < 4 || venue.length < 3 || city.length < 2) return false;
+  if (!parseFutureDate(event.date)) return false;
+  if (description.length > 0 && description.length < 20) return false;
+  return true;
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -67,44 +164,51 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const cronSecret = Deno.env.get('SCRAPE_CRON_SECRET');
+    const cronHeader = req.headers.get('x-cron-secret');
+    const isCronRequest = Boolean(cronSecret && cronHeader && cronHeader === cronSecret);
 
-    // Authentication check - require valid JWT
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.log('No authorization header provided');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!isCronRequest) {
+      // Authentication check - require valid JWT
+      const authHeader = req.headers.get('authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        console.log('No authorization header provided');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Authentication required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        console.log('Invalid token:', authError?.message);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Authorization check - require admin role
+      const { data: roles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin');
+
+      if (roleError || !roles || roles.length === 0) {
+        console.log('User is not admin:', user.id);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Admin authenticated:', user.id);
+    } else {
+      console.log('Cron authenticated');
     }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      console.log('Invalid token:', authError?.message);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Authorization check - require admin role
-    const { data: roles, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin');
-
-    if (roleError || !roles || roles.length === 0) {
-      console.log('User is not admin:', user.id);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Admin authenticated:', user.id);
 
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
@@ -125,10 +229,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    const sources = await getEventSources(supabase);
+    const allowedDomains = new Set(
+      sources
+        .map((source) => source.domain || normalizeDomain(source.url))
+        .filter((domain): domain is string => Boolean(domain))
+    );
+
     // Parse and validate input
     const { url, country } = await req.json().catch(() => ({}));
-    
-    // If specific URL provided, validate it against allowed domains
+
     if (url) {
       if (typeof url !== 'string' || url.length > 500) {
         return new Response(
@@ -137,7 +247,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      if (!isAllowedUrl(url)) {
+      if (!isAllowedTicketUrl(url, allowedDomains)) {
         console.log('URL not in allowed domains:', url);
         return new Response(
           JSON.stringify({ success: false, error: 'URL domain not allowed. Only approved event websites can be scraped.' }),
@@ -146,7 +256,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Validate country if provided
     if (country && (typeof country !== 'string' || country.length > 100)) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid country format' }),
@@ -154,18 +263,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If specific URL provided, scrape that. Otherwise scrape all sources
-    const sourcesToScrape = url 
-      ? [{ url, country: country || 'Unknown', category: 'general' }]
-      : EVENT_SOURCES;
+    const sourcesToScrape: EventSource[] = url
+      ? [{ name: 'Manual', url, country: country || 'Unknown', category: 'general' }]
+      : sources;
 
     const allEvents: ScrapedEvent[] = [];
+    let validEventsCount = 0;
+    const scrapeTimestamp = new Date().toISOString();
 
     for (const source of sourcesToScrape) {
       console.log(`Scraping: ${source.url}`);
-      
+
+      const sourceDomain = source.domain || normalizeDomain(source.url);
+
       try {
-        // Scrape the website using Firecrawl
         const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
           headers: {
@@ -192,7 +303,6 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Use AI to extract events from the scraped content
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -204,12 +314,12 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: `You are an event data extractor. Extract event information from the provided content and return a JSON array of events. Each event should have: title, date (in "Month DD, YYYY" format), time (in "HH:MM - HH:MM" format or "TBD"), venue, description (max 200 chars), category (one of: music, sports, tech, arts, food, business, community, wellness, education, other), city, ticket_url (if available), ticket_price (number or null), image_url (if available). Only include real upcoming events, not past events or promotional content. Return ONLY valid JSON array, no other text.`
+                content: `You are an event data extractor. Extract event information from the provided content and return a JSON array of events. Each event should have: title, date (in "Month DD, YYYY" format), time (in "HH:MM - HH:MM" format or "TBD"), venue, description (max 200 chars), category (one of: music, sports, tech, arts, food, business, community, wellness, education, other), city, ticket_url (if available), ticket_price (number or null), image_url (if available). Only include real upcoming events with confirmed dates and venues from the official listing source. Return ONLY valid JSON array, no other text.`,
               },
               {
                 role: 'user',
-                content: `Extract events from this content from ${source.country}:\n\n${markdown.slice(0, 15000)}`
-              }
+                content: `Extract events from this content from ${source.country} (${source.name}):\n\n${markdown.slice(0, 15000)}`,
+              },
             ],
             tools: [
               {
@@ -230,22 +340,25 @@ Deno.serve(async (req) => {
                             time: { type: 'string' },
                             venue: { type: 'string' },
                             description: { type: 'string' },
-                            category: { type: 'string', enum: ['music', 'sports', 'tech', 'arts', 'food', 'business', 'community', 'wellness', 'education', 'other'] },
+                            category: {
+                              type: 'string',
+                              enum: ['music', 'sports', 'tech', 'arts', 'food', 'business', 'community', 'wellness', 'education', 'other'],
+                            },
                             city: { type: 'string' },
                             ticket_url: { type: 'string' },
                             ticket_price: { type: 'number' },
-                            image_url: { type: 'string' }
+                            image_url: { type: 'string' },
                           },
-                          required: ['title', 'date', 'venue', 'category', 'city']
-                        }
-                      }
+                          required: ['title', 'date', 'venue', 'category', 'city'],
+                        },
+                      },
                     },
-                    required: ['events']
-                  }
-                }
-              }
+                    required: ['events'],
+                  },
+                },
+              },
             ],
-            tool_choice: { type: 'function', function: { name: 'extract_events' } }
+            tool_choice: { type: 'function', function: { name: 'extract_events' } },
           }),
         });
 
@@ -256,27 +369,59 @@ Deno.serve(async (req) => {
 
         const aiData = await aiResponse.json();
         const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-        
+
         if (toolCall?.function?.arguments) {
           try {
             const parsed = JSON.parse(toolCall.function.arguments);
             const events = parsed.events || [];
-            
+
             for (const event of events) {
-              allEvents.push({
+              const normalizedCategory = ALLOWED_CATEGORIES.has(event.category)
+                ? event.category
+                : 'other';
+              const normalizedTicketUrl =
+                event.ticket_url && isAllowedTicketUrl(event.ticket_url, allowedDomains)
+                  ? event.ticket_url
+                  : null;
+
+              const sanitizedEvent: ScrapedEvent = {
                 ...event,
+                title: normalizeText(event.title),
+                venue: normalizeText(event.venue),
+                description: normalizeText(event.description || ''),
+                category: normalizedCategory,
                 country: source.country,
-                time: event.time || 'TBD',
-                description: event.description || '',
-                ticket_url: event.ticket_url || null,
+                time: normalizeText(event.time) || 'TBD',
+                city: normalizeText(event.city),
+                ticket_url: normalizedTicketUrl,
                 ticket_price: event.ticket_price || null,
                 image_url: event.image_url || null,
-              });
+                source_url: source.url,
+                source_domain: sourceDomain,
+              };
+
+              if (!isValidScrapedEvent(sanitizedEvent)) {
+                continue;
+              }
+
+              allEvents.push(sanitizedEvent);
+              validEventsCount += 1;
             }
-            
+
             console.log(`Extracted ${events.length} events from ${source.url}`);
           } catch (parseError) {
             console.error(`Failed to parse AI response for ${source.url}:`, parseError);
+          }
+        }
+
+        if (source.name !== 'Manual') {
+          const { error: sourceUpdateError } = await supabase
+            .from('event_sources')
+            .update({ last_scraped_at: scrapeTimestamp })
+            .eq('url', source.url);
+
+          if (sourceUpdateError) {
+            console.error(`Failed to update scrape timestamp for ${source.name}:`, sourceUpdateError);
           }
         }
       } catch (sourceError) {
@@ -286,31 +431,29 @@ Deno.serve(async (req) => {
 
     console.log(`Total events extracted: ${allEvents.length}`);
 
-    // Save events to database
     if (allEvents.length > 0) {
       for (const event of allEvents) {
         try {
-          // Parse date to create target_date
-          const parsedDate = new Date(event.date);
-          if (isNaN(parsedDate.getTime())) {
+          const parsedDate = parseFutureDate(event.date);
+          if (!parsedDate) {
             console.log(`Skipping event with invalid date: ${event.title}`);
             continue;
           }
 
-          // Check if event already exists (by title and date)
           const { data: existing } = await supabase
             .from('events')
             .select('id')
             .eq('title', event.title)
             .eq('date', event.date)
-            .single();
+            .eq('city', event.city)
+            .eq('address', event.venue)
+            .maybeSingle();
 
           if (existing) {
             console.log(`Event already exists: ${event.title}`);
             continue;
           }
 
-          // Insert new event
           const { error: insertError } = await supabase
             .from('events')
             .insert({
@@ -318,15 +461,19 @@ Deno.serve(async (req) => {
               date: event.date,
               time: event.time,
               address: event.venue,
-              description: event.description,
+              description: event.description || event.title,
               category: event.category,
               country: event.country,
               city: event.city,
               ticket_url: event.ticket_url,
               ticket_price: event.ticket_price,
-              background_image_url: event.image_url || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800',
+              background_image_url: event.image_url || FALLBACK_IMAGE,
               target_date: parsedDate.toISOString(),
               creator: 'OUTSYD Bot',
+              source_url: event.source_url,
+              source_domain: event.source_domain || null,
+              source_verified: true,
+              scraped_at: scrapeTimestamp,
             });
 
           if (insertError) {
@@ -341,11 +488,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         events: allEvents,
         count: allEvents.length,
-        message: `Scraped and processed ${allEvents.length} events`
+        valid_count: validEventsCount,
+        message: `Scraped and processed ${allEvents.length} events`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
