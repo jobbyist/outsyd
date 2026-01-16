@@ -20,6 +20,7 @@ import Affiliate from "./pages/Affiliate";
 import NotFound from "./pages/NotFound";
 import { ChatBot } from "./components/ChatBot";
 import { Preloader } from "./components/Preloader";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(() => {
@@ -38,6 +39,7 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Discover />} />
           <Route path="/event/:id" element={<Index />} />

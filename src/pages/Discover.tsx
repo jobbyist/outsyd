@@ -23,6 +23,38 @@ import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { EVENT_CATEGORIES, EventCategory } from '@/constants/eventCategories';
 
 const EVENTS_PER_PAGE = 12;
+const COMMUNITY_HIGHLIGHTS = [
+  {
+    title: "Afrobeat Rooftop Jam",
+    location: "Lagos, Nigeria",
+    highlight: "Golden hour sets, live percussion, and a crowd that sang every hook.",
+    tag: "Music + Nightlife",
+  },
+  {
+    title: "Sunday Skate Social",
+    location: "Cape Town, South Africa",
+    highlight: "Roll-out meets street art with pop-up thrift and food trucks.",
+    tag: "Community Vibes",
+  },
+  {
+    title: "Nairobi Creators Market",
+    location: "Nairobi, Kenya",
+    highlight: "Handmade drops, live DJ sessions, and a runway-style showcase.",
+    tag: "Culture + Makers",
+  },
+  {
+    title: "Accra Wellness Run",
+    location: "Accra, Ghana",
+    highlight: "Sunrise stretches, wellness talks, and a post-run smoothie fest.",
+    tag: "Fitness + Wellness",
+  },
+  {
+    title: "Johannesburg Art Walk",
+    location: "Johannesburg, South Africa",
+    highlight: "Murals, open studios, and a guided tour with local storytellers.",
+    tag: "Art + Storytelling",
+  },
+];
 
 interface Event {
   id: string;
@@ -544,9 +576,73 @@ const Discover = () => {
             </div>
           </div>
 
-          {/* Bottom Ad Placeholder */}
-          <div className="mt-12">
-            <AdPlaceholder size="banner" />
+      {/* Bottom Ad Placeholder */}
+      <div className="mt-12">
+        <AdPlaceholder size="banner" />
+      </div>
+    </div>
+  </section>
+
+      {/* Out & About Section */}
+      <section className="px-4 md:px-8 pb-16 pt-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Out & About</p>
+              <h2 className="text-2xl md:text-3xl font-medium mt-2">Out & About</h2>
+              <p className="text-sm md:text-base text-muted-foreground mt-3 max-w-2xl">
+                Instagram-style reels from our community. Relive the energy and get inspired for your next
+                outing.
+              </p>
+            </div>
+            <div className="border border-foreground px-4 py-3 text-xs uppercase font-medium">
+              Fresh highlights every week
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {COMMUNITY_HIGHLIGHTS.map((highlight) => (
+              <div
+                key={highlight.title}
+                className="border border-foreground bg-background shadow-[6px_6px_0_0_rgba(0,0,0,0.12)]"
+              >
+                <div className="relative aspect-[9/16] overflow-hidden border-b border-foreground bg-gradient-to-br from-foreground/10 via-background to-foreground/5">
+                  <div className="absolute inset-0 flex flex-col justify-between p-5">
+                    <div className="flex items-center justify-between text-[11px] uppercase tracking-wide">
+                      <span className="bg-background/90 px-2 py-1 border border-foreground">Outsyd Reel</span>
+                      <span className="bg-background/90 px-2 py-1 border border-foreground">{highlight.tag}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">{highlight.title}</p>
+                      <p className="text-xs text-muted-foreground">{highlight.location}</p>
+                      <p className="text-sm">{highlight.highlight}</p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-4 h-10 w-10 rounded-full border border-foreground bg-background/90 flex items-center justify-center text-lg">
+                    ▶
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 border border-foreground p-6 md:p-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-lg md:text-xl font-medium">Get featured in Out & About</h3>
+              <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-2xl">
+                Submit your highlight reels for a chance to be featured on our homepage and socials — and win
+                exciting prizes and giveaways. Follow us on Instagram @outsyd.africa to stay in the loop.
+              </p>
+            </div>
+            <Button asChild className="gradient-brand text-foreground font-medium">
+              <a
+                href="https://www.instagram.com/outsyd.africa/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Submit your highlight
+              </a>
+            </Button>
           </div>
         </div>
       </section>
