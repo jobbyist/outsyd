@@ -118,9 +118,12 @@ const Discover = () => {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const [lastUpdatedSource, setLastUpdatedSource] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEvents();
+    fetchLastUpdated();
     detectUserCountry();
   }, []);
 
@@ -187,6 +190,29 @@ const Discover = () => {
       if (import.meta.env.DEV) console.error('Error fetching events:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLastUpdated = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('scraped_at, source_domain')
+        .not('scraped_at', 'is', null)
+        .order('scraped_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data?.scraped_at) {
+        setLastUpdatedAt(new Date(data.scraped_at));
+      }
+      if (data?.source_domain) {
+        setLastUpdatedSource(data.source_domain);
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Error fetching last updated timestamp:', error);
     }
   };
 
@@ -307,6 +333,14 @@ const Discover = () => {
           <p className="text-sm md:text-base lg:text-[18px] text-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>
             Explore music festivals, tech conferences, sports events, and more across the continent. Get tickets and never miss out.
           </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] uppercase text-muted-foreground animate-fade-in" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
+            <span className="border border-foreground/60 px-2 py-1">Verified sources</span>
+            <span>
+              Updated daily
+              {lastUpdatedAt ? ` · Last refresh ${format(lastUpdatedAt, 'MMM d, yyyy')}` : ''}
+              {lastUpdatedSource ? ` · Source: ${lastUpdatedSource}` : ''}
+            </span>
+          </div>
         </div>
       </section>
 
